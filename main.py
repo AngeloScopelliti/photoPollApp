@@ -6,6 +6,9 @@ import datetime
 if 'upload_key' not in st.session_state:
     st.session_state.upload_key = 0
 
+if 'ordinamento' not in st.session_state:
+    st.session_state.ordinamento = "Più recenti"
+
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
@@ -59,29 +62,31 @@ if tutti_gli_elementi:
 
     if foto_reali:
         
-        # --- NUOVA SEZIONE: FILTRO DI ORDINAMENTO ---
+       # --- NUOVA SEZIONE: FILTRO A TENDINA PERSONALIZZATO ---
         with col_filtro:
-            ordinamento = st.radio(
-                "Ordina per:",
-                ("Più recenti", "Meno recenti", "I più votati"),
-                horizontal=True, # Questo è il trucco: li mette uno di fianco all'altro invece che in colonna
-                label_visibility="collapsed" 
-            )
+            # st.popover crea un bottone che, se cliccato, apre un menu a comparsa (proprio come un selectbox!)
+            with st.popover(f"↕️ {st.session_state.ordinamento}", use_container_width=True):
+                # Usiamo dei semplici bottoni per le opzioni, così la tastiera non si aprirà MAI
+                if st.button("Più recenti", use_container_width=True):
+                    st.session_state.ordinamento = "Più recenti"
+                    st.rerun()
+                if st.button("Meno recenti", use_container_width=True):
+                    st.session_state.ordinamento = "Meno recenti"
+                    st.rerun()
+                if st.button("I più votati", use_container_width=True):
+                    st.session_state.ordinamento = "I più votati"
+                    st.rerun()
         
-        # Logica per riordinare la lista 'foto_reali'
-        if ordinamento == "Più recenti":
-            # Ordine alfabetico inverso (dal timestamp più alto al più basso)
+        # Logica per riordinare (usa il valore salvato in session_state)
+        if st.session_state.ordinamento == "Più recenti":
             foto_reali.sort(key=lambda x: x['name'], reverse=True)
-        
-        elif ordinamento == "Meno recenti":
-            # Ordine alfabetico normale (dal timestamp più basso al più alto)
+        elif st.session_state.ordinamento == "Meno recenti":
             foto_reali.sort(key=lambda x: x['name'])
-            
-        elif ordinamento == "I più votati":
-            # Ordina in base al numero di voti nel dizionario (dal più alto al più basso)
+        elif st.session_state.ordinamento == "I più votati":
             foto_reali.sort(key=lambda x: voti_dict.get(x['name'], 0), reverse=True)
-        # --------------------------------------------
+        # ------------------------------------------------------
 
+        
         # Ora disegniamo la griglia con la lista ordinata
         cols = st.columns(3)
         for index, file in enumerate(foto_reali):
