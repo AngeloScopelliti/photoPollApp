@@ -2,9 +2,10 @@ import streamlit as st
 from supabase import create_client
 import datetime
 import requests
+import streamlit.components.v1 as components # Nuovo import per lo scroll automatico
 
 # ==========================================
-# 1. INIZIALIZZAZIONE
+# 1. INIZIALIZZAZIONE MEMORIA
 # ==========================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
@@ -16,6 +17,9 @@ if 'upload_key' not in st.session_state:
     st.session_state.upload_key = 0
 if 'ordinamento' not in st.session_state:
     st.session_state.ordinamento = "Più recenti"
+# NUOVO: Memoria per lo scorrimento della pagina
+if 'scroll_to' not in st.session_state:
+    st.session_state.scroll_to = None
 
 # ==========================================
 # 2. LOGIN (NOME + PASSWORD)
@@ -53,6 +57,8 @@ if st.session_state.foto_selezionata:
     f_name = f_info['name']
     
     if st.button("⬅️ Torna alla Galleria"):
+        # Memorizziamo la foto da cui stiamo tornando per scrollare giù!
+        st.session_state.scroll_to = f_name
         st.session_state.foto_selezionata = None
         st.rerun()
 
@@ -77,15 +83,12 @@ if st.session_state.foto_selezionata:
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            # BOTTONE DINAMICO: Vota o Togli Voto
             label_voto = "❤️ Votato" if ha_votato else "👍 Vota"
             if st.button(label_voto, use_container_width=True, type="secondary" if ha_votato else "primary"):
                 if not ha_votato:
-                    # Aggiunge voto
                     supabase.table("voti_per_utente").insert({"file_name": f_name, "nome_utente": st.session_state.nome_utente}).execute()
                     supabase.table("voti_foto").update({"conteggio_voti": voti_totali + 1}).eq("file_name", f_name).execute()
                 else:
-                    # Rimuove voto
                     supabase.table("voti_per_utente").delete().eq("file_name", f_name).eq("nome_utente", st.session_state.nome_utente).execute()
                     supabase.table("voti_foto").update({"conteggio_voti": max(0, voti_totali - 1)}).eq("file_name", f_name).execute()
                 st.rerun()
@@ -171,12 +174,56 @@ if tutti:
             v_att = v_dict.get(f['name'], 0)
             gia_votato = f['name'] in miei_voti_list
             
+            # Creiamo un ID sicuro per l'ancoraggio (togliamo i punti dal nome file)
+            safe_id = "anchor_" + f['name'].replace(".", "_")
+            
             with cols[i % 3]:
+                # INSERIAMO L'ANCORA INVISIBILE
+                st.markdown(f'<div id="{safe_id}"></div>', unsafe_allow_html=True)
+                
                 st.image(img_url, use_container_width=True)
-                # Piccola icona cuore se l'utente ha già votato questa foto
-                voto_icon = " ❤️" if gia_votato else ""
-                st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')}")
-                st.write(f"⭐ **{v_att}**{voto_icon}")
-                if st.button("🔍 Espandi", key=f"btn_{f['name']}", use_container_width=True):
-                    st.session_state.foto_selezionata = f
-                    st.rerun()
+                st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**")
+                
+                # BOTTONI AFFIANCATI: Vota e Apri
+                btn_vota, btn_apri = st.columns(2)
+                
+                with btn_vota:
+                    label_voto_rapido = "❤️" if gia_votato else "👍"
+                    if st.button(label_voto_rapido, key=f"btn_v_{f['name']}", use_container_width=True, type="secondary" if gia_votato else "primary"):
+                        if not gia_votato:
+                            supabase.table("voti_per_utente").insert({"file_name": f['name'], "nome_utente": st.session_state.nome_utente}).execute()
+                            supabase.table("voti_foto").update({"conteggio_voti": v_att + 1}).eq("file_name", f['name']).execute()
+                        else:
+                            supabase.table("voti_per_utente").delete().eq("file_name", f['name']).eq("nome_utente", st.session_state.nome_utente).execute()
+                            supabase.table("voti_foto").update({"conteggio_voti": max(0, v_att - 1)}).eq("file_name", f['name']).execute()
+                        
+                        # Memorizziamo la posizione per non far scattare la pagina in alto!
+                        st.session_state.scroll_to = f['name']
+                        st.rerun()
+                
+                with btn_apri:
+                    if st.button("🔍", key=f"btn_a_{f['name']}", use_container_width=True):
+                        st.session_state.foto_selezionata = f
+                        st.rerun()
+
+# ==========================================
+# 6. ESECUZIONE DELLO SCROLL AUTOMATICO
+# ==========================================
+# Se abbiamo in memoria un punto in cui scorrere, eseguiamo il Javascript
+if st.session_state.scroll_to:
+    safe_target_id = "anchor_" + st.session_state.scroll_to.replace(".", "_")
+    js_scroll = f"""
+    <script>
+        // Cerca l'ancora nella pagina principale di Streamlit
+        var target = window.parent.document.getElementById('{safe_target_id}');
+        if (target) {{
+            // Fai scorrere dolcemente lo schermo fino all'elemento
+            target.scrollIntoView({{behavior: 'smooth', block: 'center'}});
+        }}
+    </script>
+    """
+    # Eseguiamo lo script in modo invisibile
+    components.html(js_scroll, height=0)
+    
+    # Puliamo la memoria così non scorre giù a caso al prossimo click
+    st.session_state.scroll_to = None
