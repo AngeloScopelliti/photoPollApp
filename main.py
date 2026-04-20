@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client
+import datetime
 
 # Configurazione connessione
 url = st.secrets["SUPABASE_URL"]
@@ -12,24 +13,26 @@ st.title("📸 La nostra Galleria Privata")
 uploaded_file = st.file_uploader("Trascina qui la tua foto o clicca per importare", type=['jpg', 'png', 'jpeg'])
 
 if uploaded_file is not None:
-    # Genera un nome file unico
-    file_path = f"galleria/{uploaded_file.name}"
+    # 1. Crea un timestamp unico (es: 20231027_153045)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     
-    # Upload automatico su Supabase Storage
+    # 2. Unisci il timestamp al nome originale
+    file_name_unico = f"{timestamp}_{uploaded_file.name}"
+    file_path = f"galleria/{file_name_unico}"
+    
     with st.spinner('Caricamento in corso...'):
         try:
-            # Legge i byte del file
             file_bytes = uploaded_file.getvalue()
             
-            # Carica nel bucket 'foto_amici'
+            # 3. Usa il nuovo nome file_path
             res = supabase.storage.from_("foto_amici").upload(
                 path=file_path,
                 file=file_bytes,
                 file_options={"content-type": uploaded_file.type}
             )
-            st.success("Foto caricata con successo!")
+            st.success(f"Foto caricata come: {file_name_unico}")
         except Exception as e:
-            st.error(f"Errore: Forse la foto esiste già?")
+            st.error(f"Errore durante l'upload: {e}")
 
 # Visualizzazione (Logica per mostrare le foto caricate)
 st.divider()
