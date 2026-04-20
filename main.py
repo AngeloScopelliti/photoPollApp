@@ -124,29 +124,42 @@ if st.session_state.foto_selezionata:
 # ==========================================
 st.title(f"👋 Ciao {st.session_state.nome_utente}!")
 
-uploaded_file = st.file_uploader(
-    "Carica una nuova foto", 
+# Abbiamo aggiunto l'opzione per il caricamento multiplo e cambiato il nome in "uploaded_files"
+uploaded_files = st.file_uploader(
+    "Carica le tue foto (puoi selezionarne più di una!)", 
     type=['jpg', 'png', 'jpeg', 'webp', 'heic'],
+    accept_multiple_files=True, # <--- LA MAGIA È QUI
     key=f"uploader_{st.session_state.upload_key}"
 )
 
-if uploaded_file is not None:
-    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    file_name = f"{timestamp}_{uploaded_file.name}"
-    
-    with st.spinner('Salvataggio...'):
-        supabase.storage.from_("PhotoPollApp").upload(path=file_name, file=uploaded_file.getvalue(), file_options={"content-type": uploaded_file.type})
+# Se la lista di file non è vuota...
+if uploaded_files:
+    with st.spinner(f'Sto salvando {len(uploaded_files)} foto...'):
         
-        # SALVIAMO IL NOME DI CHI CARICA NELLA TABELLA VOTI
-        supabase.table("voti_foto").insert({
-            "file_name": file_name, 
-            "conteggio_voti": 0,
-            "autore": st.session_state.nome_utente
-        }).execute()
-        
-        st.success("Foto caricata!")
+        # Facciamo un ciclo "for" per caricare una foto alla volta
+        for indice, file in enumerate(uploaded_files):
+            # Usiamo i microsecondi (%f) e l'indice per avere nomi assolutamente unici
+            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            file_name = f"{timestamp}_num{indice}_{file.name}"
+            
+            # Salvataggio su Storage
+            supabase.storage.from_("PhotoPollApp").upload(
+                path=file_name, 
+                file=file.getvalue(), 
+                file_options={"content-type": file.type}
+            )
+            
+            # Creazione riga nel Database
+            supabase.table("voti_foto").insert({
+                "file_name": file_name, 
+                "conteggio_voti": 0,
+                "autore": st.session_state.nome_utente
+            }).execute()
+            
+        st.success(f"Hai caricato {len(uploaded_files)} foto con successo!")
         st.session_state.upload_key += 1
         st.rerun()
+
 
 st.divider()
 
