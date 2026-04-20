@@ -40,7 +40,7 @@ st.subheader("🖼️ Galleria delle Foto")
 
 # 1. Recupera la lista di tutti i file nel bucket
 # 'galleria' è la sottocartella se l'hai usata, altrimenti usa ""
-files = supabase.storage.from_("foto_amici").list("galleria")
+files = supabase.storage.from_("PhotoPollApp").list("galleria")
 
 if files:
     # Creiamo una griglia con 3 colonne per un aspetto più ordinato
