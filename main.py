@@ -166,24 +166,25 @@ if tutti:
 
         cols = st.columns(3)
 
-        with cols[index % 3]:
-            st.image(img_url, use_container_width=True)
-            
-            # Uniamo autore, voti e il tasto in una singola riga compatta
-            col_sx, col_dx = st.columns([2, 1])
-            with col_sx:
-                st.caption(f"Di {autore_f} | ⭐ **{v_att}**{voto_icon}")
-            with col_dx:
-                # Un bottone piccolissimo e discreto
-                if st.button("👁️ Apri", key=f"btn_{f['name']}", use_container_width=True):
-                    st.session_state.foto_selezionata = f
-                    st.rerun()
-        """
         for i, f in enumerate(foto):
             img_url = supabase.storage.from_("PhotoPollApp").get_public_url(f['name'])
             v_att = v_dict.get(f['name'], 0)
             gia_votato = f['name'] in miei_voti_list
             
+            with cols[index % 3]:
+                st.image(img_url, use_container_width=True)
+                
+                # Uniamo autore, voti e il tasto in una singola riga compatta
+                col_sx, col_dx = st.columns([2, 1])
+                with col_sx:
+                    st.caption(f"Di {autore_f} | ⭐ **{v_att}**{voto_icon}")
+                with col_dx:
+                    # Un bottone piccolissimo e discreto
+                    if st.button("👁️ Apri", key=f"btn_{f['name']}", use_container_width=True):
+                        st.session_state.foto_selezionata = f
+                        st.rerun()
+
+        """    
             with cols[i % 3]:
                 st.image(img_url, use_container_width=True)
                 # Piccola icona cuore se l'utente ha già votato questa foto
