@@ -218,8 +218,6 @@ if foto:
             
             with b_apri:
                 # Usa ON_CLICK per attivare la funzione callback in modo sicuro
-                if st.button("🔍", key=f"a_{f['name']}", use_container_width=True):
-                    st.session_state.foto_in_dialog = f
-                    st.rerun()
+                st.button("Apri", icon=":material/fullscreen:", key=f"a_{f['name']}", use_container_width=True, type="tertiary", on_click=imposta_foto_da_aprire, args=(f,))
 else:
     st.info("Galleria vuota.")
