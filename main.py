@@ -40,9 +40,13 @@ if uploaded_file is not None:
         st.session_state.upload_key += 1
         st.rerun()
 
-# 3. GALLERIA, VOTI ED ELIMINAZIONE
+# 3. GALLERIA, VOTI, FILTRI ED ELIMINAZIONE
 st.divider()
-st.subheader("🖼️ Galleria delle Foto")
+
+# Creiamo due colonne per il titolo e per il filtro di ordinamento
+col_titolo, col_filtro = st.columns([2, 1])
+with col_titolo:
+    st.subheader("🖼️ Galleria delle Foto")
 
 tutti_gli_elementi = supabase.storage.from_("PhotoPollApp").list()
 
@@ -54,6 +58,30 @@ if tutti_gli_elementi:
     foto_reali = [f for f in tutti_gli_elementi if f['name'].lower().endswith(estensioni_valide)]
 
     if foto_reali:
+        
+        # --- NUOVA SEZIONE: FILTRO DI ORDINAMENTO ---
+        with col_filtro:
+            ordinamento = st.selectbox(
+                "Ordina per:",
+                ("Più recenti", "Meno recenti", "I più votati"),
+                label_visibility="collapsed" # Nasconde l'etichetta per un look più pulito
+            )
+        
+        # Logica per riordinare la lista 'foto_reali'
+        if ordinamento == "Più recenti":
+            # Ordine alfabetico inverso (dal timestamp più alto al più basso)
+            foto_reali.sort(key=lambda x: x['name'], reverse=True)
+        
+        elif ordinamento == "Meno recenti":
+            # Ordine alfabetico normale (dal timestamp più basso al più alto)
+            foto_reali.sort(key=lambda x: x['name'])
+            
+        elif ordinamento == "I più votati":
+            # Ordina in base al numero di voti nel dizionario (dal più alto al più basso)
+            foto_reali.sort(key=lambda x: voti_dict.get(x['name'], 0), reverse=True)
+        # --------------------------------------------
+
+        # Ora disegniamo la griglia con la lista ordinata
         cols = st.columns(3)
         for index, file in enumerate(foto_reali):
             img_url = supabase.storage.from_("PhotoPollApp").get_public_url(file['name'])
@@ -63,7 +91,6 @@ if tutti_gli_elementi:
                 st.image(img_url, use_container_width=True)
                 st.write(f"⭐ Voti: **{voti_attuali}**")
                 
-                # Creiamo due bottoni vicini: Vota ed Elimina
                 btn_vota, btn_del = st.columns(2)
                 
                 with btn_vota:
@@ -73,14 +100,11 @@ if tutti_gli_elementi:
                         st.rerun()
                 
                 with btn_del:
-                    # Usiamo un popover per confermare l'eliminazione (evita click per errore)
                     with st.popover("Elimina 🗑️"):
                         st.warning("Sei sicuro?")
                         if st.button("Sì, elimina", key=f"confirm_del_{file['name']}", type="primary"):
                             with st.spinner("Eliminando..."):
-                                # 1. Elimina dallo Storage
                                 supabase.storage.from_("PhotoPollApp").remove([file['name']])
-                                # 2. Elimina dal Database
                                 supabase.table("voti_foto").delete().eq("file_name", file['name']).execute()
                                 st.success("Eliminata!")
                                 st.rerun()
