@@ -224,7 +224,6 @@ else:
 # ==========================================
 # 8. JAVASCRIPT INJECTION (FORZA IL LAYOUT MOBILE)
 # ==========================================
-# Questo script viene eseguito in modo invisibile: cerca i tasti "Apri" e blocca le loro colonne
 components.html("""
 <script>
     setTimeout(function() {
@@ -232,31 +231,29 @@ components.html("""
         const buttons = parent.querySelectorAll('button');
         
         buttons.forEach(btn => {
-            // Troviamo i tasti che contengono la parola "Apri"
             if (btn.innerText.includes('Apri')) {
-                // Troviamo il contenitore orizzontale che avvolge Cuore + Apri
                 const row = btn.closest('div[data-testid="stHorizontalBlock"]');
                 if (row) {
-                    // Forziamo il flexbox a NON andare a capo
                     row.style.setProperty("display", "flex", "important");
                     row.style.setProperty("flex-direction", "row", "important");
                     row.style.setProperty("flex-wrap", "nowrap", "important");
+                    row.style.setProperty("justify-content", "center", "important"); /* Centra i bottoni */
+                    row.style.setProperty("max-width", "250px", "important"); /* RESTRINGE LA BARRA DEI BOTTONI */
+                    row.style.setProperty("margin", "0 auto", "important"); /* Centra la barra nello schermo */
                     
                     const cols = row.querySelectorAll('div[data-testid="column"]');
                     if (cols.length >= 2) {
-                        // Colonna 0 (Cuore): Piccola
                         cols[0].style.setProperty("flex", "1", "important");
                         cols[0].style.setProperty("width", "auto", "important");
                         cols[0].style.setProperty("min-width", "0", "important");
                         
-                        // Colonna 1 (Apri): Grande
-                        cols[1].style.setProperty("flex", "3", "important");
+                        cols[1].style.setProperty("flex", "2", "important"); /* Ridotto da 3 a 2 per renderlo meno largo */
                         cols[1].style.setProperty("width", "auto", "important");
                         cols[1].style.setProperty("min-width", "0", "important");
                     }
                 }
             }
         });
-    }, 500); // 500ms di ritardo per assicurarci che i tasti siano stati renderizzati
+    }, 500);
 </script>
 """, height=0, width=0)
