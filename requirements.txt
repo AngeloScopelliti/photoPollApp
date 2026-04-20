@@ -1,5 +1,2 @@
 streamlit
 supabase
-requests
-streamlit-clickable-images
-st-clickable-images
