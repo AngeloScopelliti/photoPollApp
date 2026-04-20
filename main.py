@@ -79,7 +79,7 @@ def mostra_popup_foto(file_obj):
         with c1:
             # MATERIAL ICONS PER IL VOTO NEL POPUP
             testo_voto = "Votato" if ha_votato else "Vota"
-            icona_voto = ":material/favorite:" if ha_votato else ":material/favorite_border:"
+            icona_voto = ":material/favorite:" if ha_votato else "❤️"
             
             if st.button(testo_voto, icon=icona_voto, use_container_width=True, type="secondary" if ha_votato else "primary", key="btn_vota_pop"):
                 if not ha_votato:
@@ -192,7 +192,7 @@ if foto:
             with b_vota:
                 # MATERIAL ICONS PER IL VOTO NELLA GALLERIA
                 testo_btn = "Votato" if gia_votato else "Vota"
-                icona_btn = ":material/favorite:" if gia_votato else ":material/favorite_border:"
+                icona_btn = ":material/favorite:" if gia_votato else "❤️"
                 
                 if st.button(testo_btn, icon=icona_btn, key=f"v_{f['name']}", use_container_width=True, type="secondary" if gia_votato else "primary"):
                     if not gia_votato:
@@ -205,7 +205,7 @@ if foto:
                     st.rerun()
             with b_apri:
                 # Icona Material per espandere
-                if st.button("Apri", icon=":material/visibility:", key=f"a_{f['name']}", use_container_width=True):
+                if st.button("🔍", key=f"a_{f['name']}", use_container_width=True):
                     st.session_state.foto_in_dialog = f
                     st.rerun()
 else:
