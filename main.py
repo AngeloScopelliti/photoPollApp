@@ -4,6 +4,36 @@ import datetime
 import requests
 
 # ==========================================
+# 0. INIEZIONE CSS PER IL MOBILE (ANTI-A CAPO)
+# ==========================================
+# Questo blocco forza Streamlit a mantenere i bottoni affiancati sui cellulari
+st.markdown("""
+<style>
+@media (max-width: 768px) {
+    /* Trova il blocco dei bottoni subito dopo il nostro marker e forza la riga orizzontale */
+    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        gap: 0.2rem !important;
+    }
+    /* Permette alle colonne di stringersi senza andare a capo */
+    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+        width: auto !important;
+        min-width: 0 !important;
+    }
+    /* Mantiene la proporzione 1 a 3 (Cuore piccolo, Tasto Apri più grande) */
+    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(1) {
+        flex: 1 !important;
+    }
+    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
+        flex: 3 !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
+
+# ==========================================
 # 1. INIZIALIZZAZIONE MEMORIA (SESSION STATE)
 # ==========================================
 if "autenticato" not in st.session_state:
@@ -14,17 +44,14 @@ if 'upload_key' not in st.session_state:
     st.session_state.upload_key = 0
 if 'ordinamento' not in st.session_state:
     st.session_state.ordinamento = "Più recenti"
-
-# Variabili per gestire il popup senza riaperture accidentali
 if 'foto_in_dialog' not in st.session_state:
     st.session_state.foto_in_dialog = None
 if 'apri_cliccato' not in st.session_state:
     st.session_state.apri_cliccato = False
 
-# PULIZIA AUTOMATICA: Se l'app si ricarica per un filtro o un upload, svuotiamo la memoria del popup!
 if not st.session_state.apri_cliccato:
     st.session_state.foto_in_dialog = None
-st.session_state.apri_cliccato = False # Resetta il trigger per il prossimo giro
+st.session_state.apri_cliccato = False
 
 # ==========================================
 # 2. CONNESSIONE A SUPABASE E CACHE
@@ -63,7 +90,6 @@ if not login():
 # ==========================================
 # 4. FUNZIONE DIALOG E CALLBACK
 # ==========================================
-# Callback: Questa funzione si attiva SOLO quando clicchi esattamente il tasto "Apri"
 def imposta_foto_da_aprire(file_obj):
     st.session_state.foto_in_dialog = file_obj
     st.session_state.apri_cliccato = True
@@ -92,7 +118,7 @@ def mostra_popup_foto(file_obj):
         c1, c2, c3 = st.columns(3)
         with c1:
             testo_voto = "Votato" if ha_votato else "Vota"
-            icona_voto = ":material/favorite:" if not ha_votato else "❤️"
+            icona_voto = "❤️" if ha_votato else ":material/favorite:"
             
             if st.button(testo_voto, icon=icona_voto, use_container_width=True, type="secondary" if ha_votato else "primary", key="btn_vota_pop"):
                 if not ha_votato:
@@ -103,7 +129,7 @@ def mostra_popup_foto(file_obj):
                     supabase.table("voti_foto").update({"conteggio_voti": max(0, voti_totali - 1)}).eq("file_name", f_name).execute()
                 
                 recupera_dati_globali.clear()
-                st.rerun() # Aggiorna i dati senza chiudere
+                st.rerun()
         
         with c2:
             try:
@@ -118,7 +144,7 @@ def mostra_popup_foto(file_obj):
                     supabase.table("voti_foto").delete().eq("file_name", f_name).execute()
                     recupera_dati_globali.clear()
                     st.session_state.foto_in_dialog = None
-                    st.rerun() # Chiude il popup
+                    st.rerun()
 
         st.divider()
         st.subheader("💬 Commenti")
@@ -200,11 +226,14 @@ if foto:
             v_icon_testo = " ❤️" if gia_votato else ""
             st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**{v_icon_testo}")
             
+            # --- MARKER SEGRETO PER IL CSS MOBILE ---
+            st.markdown('<div class="bottoni-inline"></div>', unsafe_allow_html=True)
+            
             # --- TASTI SENZA BORDI (TERTIARY) E PROPORZIONI 1 A 3 ---
             b_vota, b_apri = st.columns([1, 3]) 
             
             with b_vota:
-                icona_btn = ":material/favorite:" if not gia_votato else "❤️"
+                icona_btn = "❤️" if gia_votato else ":material/favorite:"
                 
                 if st.button("", icon=icona_btn, key=f"v_{f['name']}", use_container_width=True, type="tertiary"):
                     if not gia_votato:
@@ -217,7 +246,6 @@ if foto:
                     st.rerun()
             
             with b_apri:
-                # Usa ON_CLICK per attivare la funzione callback in modo sicuro
                 st.button("Apri", icon=":material/fullscreen:", key=f"a_{f['name']}", use_container_width=True, type="tertiary", on_click=imposta_foto_da_aprire, args=(f,))
 else:
     st.info("Galleria vuota.")
