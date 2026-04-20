@@ -1,4 +1,5 @@
 **PhotoPollApp**
+
 A web app to share your photos with your friends to find the preferred one!
 
 Functionality:
