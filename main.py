@@ -52,7 +52,7 @@ if files:
             continue
             
         # 2. Ottieni l'URL pubblico dell'immagine
-        img_url = supabase.storage.from_("foto_amici").get_public_url(f"galleria/{file['name']}")
+        img_url = supabase.storage.from_("PhotoPollApp").get_public_url(f"galleria/{file['name']}")
         
         # Inseriamo ogni immagine in una colonna a rotazione
         with cols[index % 3]:
