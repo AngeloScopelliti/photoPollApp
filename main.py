@@ -2,6 +2,33 @@ import streamlit as st
 from supabase import create_client
 import datetime
 
+# --- SISTEMA DI LOGIN (IL BUTTAFUORI) ---
+def check_password():
+    """Restituisce True se l'utente ha inserito la password corretta."""
+    if "password_corretta" not in st.session_state:
+        st.session_state.password_corretta = False
+
+    if not st.session_state.password_corretta:
+        st.title("🔒 Area Riservata")
+        st.write("Inserisci la parola d'ordine per vedere la galleria.")
+        
+        # Campo di testo per la password
+        pwd_inserita = st.text_input("Password", type="password")
+        
+        if st.button("Entra"):
+            if pwd_inserita == st.secrets["PASSWORD_ACCESSO"]:
+                st.session_state.password_corretta = True
+                st.rerun()
+            else:
+                st.error("😕 Password errata. Riprova!")
+        return False
+    return True
+
+# Se la password non è corretta, fermiamo l'app qui.
+if not check_password():
+    st.stop()
+# ----------------------------------------
+
 # 1. Configurazione e Session State per la pulizia dell'upload
 if 'upload_key' not in st.session_state:
     st.session_state.upload_key = 0
