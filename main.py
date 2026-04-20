@@ -92,7 +92,7 @@ def mostra_popup_foto(file_obj):
         c1, c2, c3 = st.columns(3)
         with c1:
             testo_voto = "Votato" if ha_votato else "Vota"
-            icona_voto = ":material/favorite:" if ha_votato else ":material/favorite_border:"
+            icona_voto = ":material/favorite:" if not ha_votato else "❤️"
             
             if st.button(testo_voto, icon=icona_voto, use_container_width=True, type="secondary" if ha_votato else "primary", key="btn_vota_pop"):
                 if not ha_votato:
@@ -204,7 +204,7 @@ if foto:
             b_vota, b_apri = st.columns([1, 3]) 
             
             with b_vota:
-                icona_btn = ":material/favorite:" if gia_votato else ":material/favorite_border:"
+                icona_btn = ":material/favorite:" if not gia_votato else "❤️"
                 
                 if st.button("", icon=icona_btn, key=f"v_{f['name']}", use_container_width=True, type="tertiary"):
                     if not gia_votato:
@@ -218,6 +218,8 @@ if foto:
             
             with b_apri:
                 # Usa ON_CLICK per attivare la funzione callback in modo sicuro
-                st.button("Apri", icon=":material/fullscreen:", key=f"a_{f['name']}", use_container_width=True, type="tertiary", on_click=imposta_foto_da_aprire, args=(f,))
+                if st.button("🔍", key=f"a_{f['name']}", use_container_width=True):
+                    st.session_state.foto_in_dialog = f
+                    st.rerun()
 else:
     st.info("Galleria vuota.")
