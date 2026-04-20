@@ -173,6 +173,7 @@ if tutti:
             
             with cols[i % 3]:
                 st.image(img_url, use_container_width=True)
+                voto_icon = " ❤️" if gia_votato else ""
                 
                 # Uniamo autore, voti e il tasto in una singola riga compatta
                 col_sx, col_dx = st.columns([2, 1])
