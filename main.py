@@ -44,7 +44,7 @@ if uploaded_file is not None:
 st.divider()
 st.subheader("🖼️ Galleria delle Foto")
 
-tutti_gli_elementi = supabase.storage.from_("foto_amici").list()
+tutti_gli_elementi = supabase.storage.from_("PhotoPollApp").list()
 
 if tutti_gli_elementi:
     voti_db = supabase.table("voti_foto").select("*").execute()
