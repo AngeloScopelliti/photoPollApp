@@ -61,10 +61,11 @@ if tutti_gli_elementi:
         
         # --- NUOVA SEZIONE: FILTRO DI ORDINAMENTO ---
         with col_filtro:
-            ordinamento = st.selectbox(
+            ordinamento = st.radio(
                 "Ordina per:",
                 ("Più recenti", "Meno recenti", "I più votati"),
-                label_visibility="collapsed" # Nasconde l'etichetta per un look più pulito
+                horizontal=True, # Questo è il trucco: li mette uno di fianco all'altro invece che in colonna
+                label_visibility="collapsed" 
             )
         
         # Logica per riordinare la lista 'foto_reali'
