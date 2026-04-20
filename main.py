@@ -171,7 +171,7 @@ if tutti:
             v_att = v_dict.get(f['name'], 0)
             gia_votato = f['name'] in miei_voti_list
             
-            with cols[index % 3]:
+            with cols[i % 3]:
                 st.image(img_url, use_container_width=True)
                 
                 # Uniamo autore, voti e il tasto in una singola riga compatta
