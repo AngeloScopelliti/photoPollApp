@@ -191,7 +191,7 @@ if foto:
             # Ancora per lo scroll
             st.markdown(f'<div id="{safe_id}"></div>', unsafe_allow_html=True)
             st.image(img_url, use_container_width=True)
-            st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**  {"❤️" if gia_votato}")
+            st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**  {"❤️" if gia_votato else ""}")
             
             # Bottoni Rapidi
             b_vota, b_apri = st.columns(2)
