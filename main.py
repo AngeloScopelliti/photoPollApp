@@ -177,7 +177,7 @@ if tutti:
                 # Uniamo autore, voti e il tasto in una singola riga compatta
                 col_sx, col_dx = st.columns([2, 1])
                 with col_sx:
-                    st.caption(f"Di {a_dict.get(f['name'], 'Sconosciuto')}} | ⭐ **{v_att}**{voto_icon}")
+                    st.caption(f"Di {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**{voto_icon}")
                 with col_dx:
                     # Un bottone piccolissimo e discreto
                     if st.button("👁️ Apri", key=f"btn_{f['name']}", use_container_width=True):
