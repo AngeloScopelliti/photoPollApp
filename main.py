@@ -188,7 +188,7 @@ if foto:
             v_icon_testo = " ❤️" if gia_votato else ""
             st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**{v_icon_testo}")
             
-            b_vota, b_apri = st.columns(2)
+            b_vota, b_apri = st.columns([1,4])
             with b_vota:
                 # MATERIAL ICONS PER IL VOTO NELLA GALLERIA
                 testo_btn = "Votato" if gia_votato else "Vota"
