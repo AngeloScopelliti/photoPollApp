@@ -9,3 +9,7 @@ Functionality:
 - Filter your photo by Most Recent, Less Recent, Most Voted.
 
 All you need is your password and you can access the archive.
+
+
+**SETUP**
+You'll need a streamlit and a supabase account.
