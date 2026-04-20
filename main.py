@@ -42,26 +42,44 @@ if uploaded_file is not None:
 
 # 3. GALLERIA E VOTI
 st.divider()
-files = supabase.storage.from_("PhotoPollApp").list()
+st.subheader("🖼️ Galleria delle Foto")
 
-if files:
-    # Recuperiamo tutti i voti dal database in un colpo solo
+# Chiediamo a Supabase tutti gli elementi
+tutti_gli_elementi = supabase.storage.from_("PhotoPollApp").list()
+
+if tutti_gli_elementi:
+    # Recuperiamo tutti i voti dal database
     voti_db = supabase.table("voti_foto").select("*").execute()
     voti_dict = {item['file_name']: item['conteggio_voti'] for item in voti_db.data}
 
-    cols = st.columns(3)
-    for index, file in enumerate(files):
-        if file['name'].startswith('.'): continue
-        
-        img_url = supabase.storage.from_("PhotoPollApp").get_public_url(file['name'])
-        voti_attuali = voti_dict.get(file['name'], 0)
-        
-        with cols[index % 3]:
-            st.image(img_url, use_container_width=True)
-            st.write(f"⭐ Voti: {voti_attuali}")
+    # ---------------------------------------------------------
+    # IL FILTRO MAGICO: teniamo solo le immagini vere e proprie
+    estensioni_valide = ('.jpg', '.jpeg', '.png', '.webp', '.heic')
+    
+    foto_reali = [
+        file for file in tutti_gli_elementi 
+        if file['name'].lower().endswith(estensioni_valide)
+    ]
+    # ---------------------------------------------------------
+
+    # Ora usiamo solo la lista 'foto_reali' per creare la griglia
+    if foto_reali:
+        cols = st.columns(3)
+        for index, file in enumerate(foto_reali):
+            img_url = supabase.storage.from_("PhotoPollApp").get_public_url(file['name'])
+            voti_attuali = voti_dict.get(file['name'], 0)
             
-            if st.button(f"Vota!", key=f"voto_{file['name']}"):
-                # Incrementa il voto nel database
-                nuovo_voto = voti_attuali + 1
-                supabase.table("voti_foto").update({"conteggio_voti": nuovo_voto}).eq("file_name", file['name']).execute()
-                st.rerun()
+            # Usiamo l'indice per assicurarci che la griglia sia riempita senza "buchi"
+            with cols[index % 3]:
+                st.image(img_url, use_container_width=True)
+                st.write(f"⭐ Voti: **{voti_attuali}**")
+                
+                if st.button("Vota! 👍", key=f"voto_{file['name']}"):
+                    # Incrementa il voto nel database
+                    nuovo_voto = voti_attuali + 1
+                    supabase.table("voti_foto").update({"conteggio_voti": nuovo_voto}).eq("file_name", file['name']).execute()
+                    st.rerun()
+    else:
+         st.info("La galleria non contiene ancora immagini valide. Inizia a caricare!")
+else:
+    st.info("La galleria è ancora vuota. Carica la prima foto per iniziare!")
