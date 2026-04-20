@@ -14,8 +14,17 @@ if 'upload_key' not in st.session_state:
     st.session_state.upload_key = 0
 if 'ordinamento' not in st.session_state:
     st.session_state.ordinamento = "Più recenti"
+
+# Variabili per gestire il popup senza riaperture accidentali
 if 'foto_in_dialog' not in st.session_state:
     st.session_state.foto_in_dialog = None
+if 'apri_cliccato' not in st.session_state:
+    st.session_state.apri_cliccato = False
+
+# PULIZIA AUTOMATICA: Se l'app si ricarica per un filtro o un upload, svuotiamo la memoria del popup!
+if not st.session_state.apri_cliccato:
+    st.session_state.foto_in_dialog = None
+st.session_state.apri_cliccato = False # Resetta il trigger per il prossimo giro
 
 # ==========================================
 # 2. CONNESSIONE A SUPABASE E CACHE
@@ -52,8 +61,13 @@ if not login():
     st.stop()
 
 # ==========================================
-# 4. FUNZIONE DIALOG (IL POPUP)
+# 4. FUNZIONE DIALOG E CALLBACK
 # ==========================================
+# Callback: Questa funzione si attiva SOLO quando clicchi esattamente il tasto "Apri"
+def imposta_foto_da_aprire(file_obj):
+    st.session_state.foto_in_dialog = file_obj
+    st.session_state.apri_cliccato = True
+
 @st.dialog("Dettaglio Foto", width="large")
 def mostra_popup_foto(file_obj):
     f_name = file_obj['name']
@@ -77,9 +91,8 @@ def mostra_popup_foto(file_obj):
         
         c1, c2, c3 = st.columns(3)
         with c1:
-            # MATERIAL ICONS PER IL VOTO NEL POPUP
             testo_voto = "Votato" if ha_votato else "Vota"
-            icona_voto = ":material/favorite:" if not ha_votato else "❤️"
+            icona_voto = ":material/favorite:" if ha_votato else ":material/favorite_border:"
             
             if st.button(testo_voto, icon=icona_voto, use_container_width=True, type="secondary" if ha_votato else "primary", key="btn_vota_pop"):
                 if not ha_votato:
@@ -90,12 +103,11 @@ def mostra_popup_foto(file_obj):
                     supabase.table("voti_foto").update({"conteggio_voti": max(0, voti_totali - 1)}).eq("file_name", f_name).execute()
                 
                 recupera_dati_globali.clear()
-                st.rerun()
+                st.rerun() # Aggiorna i dati senza chiudere
         
         with c2:
             try:
                 img_data = requests.get(img_url).content
-                # Icona download
                 st.download_button("Salva", icon=":material/download:", data=img_data, file_name=f_name, mime="image/jpeg", use_container_width=True)
             except: pass
             
@@ -106,7 +118,7 @@ def mostra_popup_foto(file_obj):
                     supabase.table("voti_foto").delete().eq("file_name", f_name).execute()
                     recupera_dati_globali.clear()
                     st.session_state.foto_in_dialog = None
-                    st.rerun()
+                    st.rerun() # Chiude il popup
 
         st.divider()
         st.subheader("💬 Commenti")
@@ -121,7 +133,7 @@ def mostra_popup_foto(file_obj):
             st.caption(f"🕒 {c['creato_at'][11:16]} - **{c.get('autore', 'Anonimo')}**")
             st.info(c['testo'])
             
-    if st.button("Chiudi", icon=":material/close:", use_container_width=True):
+    if st.button("Chiudi", icon=":material/close:", use_container_width=True, type="tertiary"):
         st.session_state.foto_in_dialog = None
         st.rerun()
 
@@ -188,11 +200,11 @@ if foto:
             v_icon_testo = " ❤️" if gia_votato else ""
             st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**{v_icon_testo}")
             
-            b_vota, b_apri = st.columns([1,4])
+            # --- TASTI SENZA BORDI (TERTIARY) E PROPORZIONI 1 A 3 ---
+            b_vota, b_apri = st.columns([1, 3]) 
+            
             with b_vota:
-                # MATERIAL ICONS PER IL VOTO NELLA GALLERIA
-                testo_btn = "Votato" if gia_votato else "Vota"
-                icona_btn = ":material/favorite:" if not gia_votato else "❤️"
+                icona_btn = ":material/favorite:" if gia_votato else ":material/favorite_border:"
                 
                 if st.button("", icon=icona_btn, key=f"v_{f['name']}", use_container_width=True, type="tertiary"):
                     if not gia_votato:
@@ -203,10 +215,9 @@ if foto:
                         supabase.table("voti_foto").update({"conteggio_voti": max(0, v_att - 1)}).eq("file_name", f['name']).execute()
                     recupera_dati_globali.clear()
                     st.rerun()
+            
             with b_apri:
-                # Icona Material per espandere
-                if st.button("🔍", key=f"a_{f['name']}", use_container_width=True):
-                    st.session_state.foto_in_dialog = f
-                    st.rerun()
+                # Usa ON_CLICK per attivare la funzione callback in modo sicuro
+                st.button("Apri", icon=":material/fullscreen:", key=f"a_{f['name']}", use_container_width=True, type="tertiary", on_click=imposta_foto_da_aprire, args=(f,))
 else:
     st.info("Galleria vuota.")
