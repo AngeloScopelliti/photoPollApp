@@ -28,5 +28,5 @@ You'll need a streamlit and a supabase account.
     PASSWORD_ACCESSO = "the_password_to_access_the_archive"
 
 
-  **ENJOY YOUR APP WITH YOUR FRIENDS**
+**ENJOY YOUR APP WITH YOUR FRIENDS**
   
