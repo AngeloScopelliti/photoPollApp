@@ -2,36 +2,7 @@ import streamlit as st
 from supabase import create_client
 import datetime
 import requests
-
-# ==========================================
-# 0. INIEZIONE CSS PER IL MOBILE (ANTI-A CAPO)
-# ==========================================
-# Questo blocco forza Streamlit a mantenere i bottoni affiancati sui cellulari
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    /* Trova il blocco dei bottoni subito dopo il nostro marker e forza la riga orizzontale */
-    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] {
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 0.2rem !important;
-    }
-    /* Permette alle colonne di stringersi senza andare a capo */
-    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
-        width: auto !important;
-        min-width: 0 !important;
-    }
-    /* Mantiene la proporzione 1 a 3 (Cuore piccolo, Tasto Apri più grande) */
-    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(1) {
-        flex: 1 !important;
-    }
-    div.element-container:has(.bottoni-inline) + div.element-container > div[data-testid="stHorizontalBlock"] > div[data-testid="column"]:nth-child(2) {
-        flex: 3 !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
+import streamlit.components.v1 as components # <--- IMPORTANTE: Nuovo import per il Javascript
 
 # ==========================================
 # 1. INIZIALIZZAZIONE MEMORIA (SESSION STATE)
@@ -44,11 +15,14 @@ if 'upload_key' not in st.session_state:
     st.session_state.upload_key = 0
 if 'ordinamento' not in st.session_state:
     st.session_state.ordinamento = "Più recenti"
+
+# Variabili per gestire il popup senza riaperture accidentali
 if 'foto_in_dialog' not in st.session_state:
     st.session_state.foto_in_dialog = None
 if 'apri_cliccato' not in st.session_state:
     st.session_state.apri_cliccato = False
 
+# PULIZIA AUTOMATICA
 if not st.session_state.apri_cliccato:
     st.session_state.foto_in_dialog = None
 st.session_state.apri_cliccato = False
@@ -118,7 +92,7 @@ def mostra_popup_foto(file_obj):
         c1, c2, c3 = st.columns(3)
         with c1:
             testo_voto = "Votato" if ha_votato else "Vota"
-            icona_voto = "❤️" if ha_votato else ":material/favorite:"
+            icona_voto = ":material/favorite:" if ha_votato else ":material/favorite_border:"
             
             if st.button(testo_voto, icon=icona_voto, use_container_width=True, type="secondary" if ha_votato else "primary", key="btn_vota_pop"):
                 if not ha_votato:
@@ -129,7 +103,7 @@ def mostra_popup_foto(file_obj):
                     supabase.table("voti_foto").update({"conteggio_voti": max(0, voti_totali - 1)}).eq("file_name", f_name).execute()
                 
                 recupera_dati_globali.clear()
-                st.rerun()
+                st.rerun() 
         
         with c2:
             try:
@@ -144,7 +118,7 @@ def mostra_popup_foto(file_obj):
                     supabase.table("voti_foto").delete().eq("file_name", f_name).execute()
                     recupera_dati_globali.clear()
                     st.session_state.foto_in_dialog = None
-                    st.rerun()
+                    st.rerun() 
 
         st.divider()
         st.subheader("💬 Commenti")
@@ -226,14 +200,10 @@ if foto:
             v_icon_testo = " ❤️" if gia_votato else ""
             st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**{v_icon_testo}")
             
-            # --- MARKER SEGRETO PER IL CSS MOBILE ---
-            st.markdown('<div class="bottoni-inline"></div>', unsafe_allow_html=True)
-            
-            # --- TASTI SENZA BORDI (TERTIARY) E PROPORZIONI 1 A 3 ---
             b_vota, b_apri = st.columns([1, 3]) 
             
             with b_vota:
-                icona_btn = "❤️" if gia_votato else ":material/favorite:"
+                icona_btn = ":material/favorite:" if gia_votato else ":material/favorite_border:"
                 
                 if st.button("", icon=icona_btn, key=f"v_{f['name']}", use_container_width=True, type="tertiary"):
                     if not gia_votato:
@@ -249,3 +219,44 @@ if foto:
                 st.button("Apri", icon=":material/fullscreen:", key=f"a_{f['name']}", use_container_width=True, type="tertiary", on_click=imposta_foto_da_aprire, args=(f,))
 else:
     st.info("Galleria vuota.")
+
+
+# ==========================================
+# 8. JAVASCRIPT INJECTION (FORZA IL LAYOUT MOBILE)
+# ==========================================
+# Questo script viene eseguito in modo invisibile: cerca i tasti "Apri" e blocca le loro colonne
+components.html("""
+<script>
+    setTimeout(function() {
+        const parent = window.parent.document;
+        const buttons = parent.querySelectorAll('button');
+        
+        buttons.forEach(btn => {
+            // Troviamo i tasti che contengono la parola "Apri"
+            if (btn.innerText.includes('Apri')) {
+                // Troviamo il contenitore orizzontale che avvolge Cuore + Apri
+                const row = btn.closest('div[data-testid="stHorizontalBlock"]');
+                if (row) {
+                    // Forziamo il flexbox a NON andare a capo
+                    row.style.setProperty("display", "flex", "important");
+                    row.style.setProperty("flex-direction", "row", "important");
+                    row.style.setProperty("flex-wrap", "nowrap", "important");
+                    
+                    const cols = row.querySelectorAll('div[data-testid="column"]');
+                    if (cols.length >= 2) {
+                        // Colonna 0 (Cuore): Piccola
+                        cols[0].style.setProperty("flex", "1", "important");
+                        cols[0].style.setProperty("width", "auto", "important");
+                        cols[0].style.setProperty("min-width", "0", "important");
+                        
+                        // Colonna 1 (Apri): Grande
+                        cols[1].style.setProperty("flex", "3", "important");
+                        cols[1].style.setProperty("width", "auto", "important");
+                        cols[1].style.setProperty("min-width", "0", "important");
+                    }
+                }
+            }
+        });
+    }, 500); // 500ms di ritardo per assicurarci che i tasti siano stati renderizzati
+</script>
+""", height=0, width=0)
