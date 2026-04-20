@@ -194,7 +194,7 @@ if foto:
                 testo_btn = "Votato" if gia_votato else "Vota"
                 icona_btn = ":material/favorite:" if not gia_votato else "❤️"
                 
-                if st.button(icon=icona_btn, key=f"v_{f['name']}", use_container_width=True):
+                if st.button("", icon=icona_btn, key=f"v_{f['name']}", use_container_width=True):
                     if not gia_votato:
                         supabase.table("voti_per_utente").insert({"file_name": f['name'], "nome_utente": st.session_state.nome_utente}).execute()
                         supabase.table("voti_foto").update({"conteggio_voti": v_att + 1}).eq("file_name", f['name']).execute()
