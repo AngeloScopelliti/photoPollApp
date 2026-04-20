@@ -2,65 +2,66 @@ import streamlit as st
 from supabase import create_client
 import datetime
 
-# Configurazione connessione
+# 1. Configurazione e Session State per la pulizia dell'upload
+if 'upload_key' not in st.session_state:
+    st.session_state.upload_key = 0
+
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
-st.title("📸 La nostra Galleria Privata")
+st.title("📸 Galleria con Votazione")
 
-# Tasto per importare le foto
-uploaded_file = st.file_uploader("Trascina qui la tua foto o clicca per importare", type=['jpg', 'png', 'jpeg'])
+# 2. SEZIONE UPLOAD con chiave dinamica
+uploaded_file = st.file_uploader(
+    "Carica una foto", 
+    type=['jpg', 'png', 'jpeg'],
+    key=f"uploader_{st.session_state.upload_key}"
+)
 
 if uploaded_file is not None:
-    # 1. Crea un timestamp unico (es: 20231027_153045)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_name = f"{timestamp}_{uploaded_file.name}"
     
-    # 2. Unisci il timestamp al nome originale
-    file_name_unico = f"{timestamp}_{uploaded_file.name}"
-    file_path = f"galleria/{file_name_unico}"
-    
-    with st.spinner('Caricamento in corso...'):
-        try:
-            file_bytes = uploaded_file.getvalue()
-            
-            # 3. Usa il nuovo nome file_path
-            res = supabase.storage.from_("PhotoPollApp").upload(
-                path=file_path,
-                file=file_bytes,
-                file_options={"content-type": uploaded_file.type}
-            )
-            st.success(f"Foto caricata come: {file_name_unico}")
-        except Exception as e:
-            st.error(f"Errore durante l'upload: {e}")
+    with st.spinner('Caricamento...'):
+        # Upload Storage
+        supabase.storage.from_("PhotoPollApp").upload(
+            path=file_name,
+            file=uploaded_file.getvalue(),
+            file_options={"content-type": uploaded_file.type}
+        )
+        
+        # Inserimento record voti nel Database
+        supabase.table("voti_foto").insert({"file_name": file_name, "conteggio_voti": 0}).execute()
+        
+        st.success("Caricata!")
+        
+        # PULIZIA: Cambiamo la chiave per resettare il widget al prossimo refresh
+        st.session_state.upload_key += 1
+        st.rerun()
 
-# Visualizzazione (Logica per mostrare le foto caricate)
+# 3. GALLERIA E VOTI
 st.divider()
-st.subheader("🖼️ Galleria delle Foto")
-
-# 1. Recupera la lista di tutti i file nel bucket
-# 'galleria' è la sottocartella se l'hai usata, altrimenti usa ""
-files = supabase.storage.from_("PhotoPollApp").list("galleria")
+files = supabase.storage.from_("PhotoPollApp").list()
 
 if files:
-    # Creiamo una griglia con 3 colonne per un aspetto più ordinato
+    # Recuperiamo tutti i voti dal database in un colpo solo
+    voti_db = supabase.table("voti_foto").select("*").execute()
+    voti_dict = {item['file_name']: item['conteggio_voti'] for item in voti_db.data}
+
     cols = st.columns(3)
-    
     for index, file in enumerate(files):
-        # Escludiamo eventuali file di sistema come .emptyFolderPlaceholder
-        if file['name'].startswith('.'):
-            continue
-            
-        # 2. Ottieni l'URL pubblico dell'immagine
-        img_url = supabase.storage.from_("PhotoPollApp").get_public_url(f"galleria/{file['name']}")
+        if file['name'].startswith('.'): continue
         
-        # Inseriamo ogni immagine in una colonna a rotazione
+        img_url = supabase.storage.from_("PhotoPollApp").get_public_url(file['name'])
+        voti_attuali = voti_dict.get(file['name'], 0)
+        
         with cols[index % 3]:
             st.image(img_url, use_container_width=True)
+            st.write(f"⭐ Voti: {voti_attuali}")
             
-            # 3. Bottone per votare (logica provvisoria)
-            if st.button(f"Vota {index+1}", key=file['name']):
-                st.balloons()
-                st.success("Voto registrato!")
-else:
-    st.info("La galleria è ancora vuota. Carica la prima foto per iniziare!")
+            if st.button(f"Vota!", key=f"voto_{file['name']}"):
+                # Incrementa il voto nel database
+                nuovo_voto = voti_attuali + 1
+                supabase.table("voti_foto").update({"conteggio_voti": nuovo_voto}).eq("file_name", file['name']).execute()
+                st.rerun()
