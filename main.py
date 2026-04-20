@@ -173,21 +173,6 @@ if tutti:
             
             with cols[i % 3]:
                 st.image(img_url, use_container_width=True)
-                voto_icon = " ❤️" if gia_votato else ""
-                
-                # Uniamo autore, voti e il tasto in una singola riga compatta
-                col_sx, col_dx = st.columns([2, 1])
-                with col_sx:
-                    st.caption(f"Di {a_dict.get(f['name'], 'Sconosciuto')} | ⭐ **{v_att}**{voto_icon}")
-                with col_dx:
-                    # Un bottone piccolissimo e discreto
-                    if st.button("👁️ Apri", key=f"btn_{f['name']}", use_container_width=True):
-                        st.session_state.foto_selezionata = f
-                        st.rerun()
-
-        """    
-            with cols[i % 3]:
-                st.image(img_url, use_container_width=True)
                 # Piccola icona cuore se l'utente ha già votato questa foto
                 voto_icon = " ❤️" if gia_votato else ""
                 st.caption(f"By: {a_dict.get(f['name'], 'Sconosciuto')}")
@@ -195,4 +180,3 @@ if tutti:
                 if st.button("🔍 Espandi", key=f"btn_{f['name']}", use_container_width=True):
                     st.session_state.foto_selezionata = f
                     st.rerun()
-        """
