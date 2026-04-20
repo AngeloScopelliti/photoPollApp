@@ -25,7 +25,7 @@ if uploaded_file is not None:
             file_bytes = uploaded_file.getvalue()
             
             # 3. Usa il nuovo nome file_path
-            res = supabase.storage.from_("foto_amici").upload(
+            res = supabase.storage.from_("PhotoPollApp").upload(
                 path=file_path,
                 file=file_bytes,
                 file_options={"content-type": uploaded_file.type}
