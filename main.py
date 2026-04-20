@@ -36,7 +36,31 @@ if uploaded_file is not None:
 
 # Visualizzazione (Logica per mostrare le foto caricate)
 st.divider()
-st.subheader("Le nostre foto")
+st.subheader("🖼️ Galleria delle Foto")
 
-# Qui andrebbe la logica per leggere i file dal bucket e mostrarli
-# Per ora simuliamo una griglia
+# 1. Recupera la lista di tutti i file nel bucket
+# 'galleria' è la sottocartella se l'hai usata, altrimenti usa ""
+files = supabase.storage.from_("foto_amici").list("galleria")
+
+if files:
+    # Creiamo una griglia con 3 colonne per un aspetto più ordinato
+    cols = st.columns(3)
+    
+    for index, file in enumerate(files):
+        # Escludiamo eventuali file di sistema come .emptyFolderPlaceholder
+        if file['name'].startswith('.'):
+            continue
+            
+        # 2. Ottieni l'URL pubblico dell'immagine
+        img_url = supabase.storage.from_("foto_amici").get_public_url(f"galleria/{file['name']}")
+        
+        # Inseriamo ogni immagine in una colonna a rotazione
+        with cols[index % 3]:
+            st.image(img_url, use_container_width=True)
+            
+            # 3. Bottone per votare (logica provvisoria)
+            if st.button(f"Vota {index+1}", key=file['name']):
+                st.balloons()
+                st.success("Voto registrato!")
+else:
+    st.info("La galleria è ancora vuota. Carica la prima foto per iniziare!")
